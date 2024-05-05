@@ -44,9 +44,23 @@ namespace UnitBrains.Player
             // Homework 1.4 (1st block, 4rd module)
             ///////////////////////////////////////
             List<Vector2Int> result = GetReachableTargets();
-            while (result.Count > 1)
+            if (result.Count > 0)
             {
-                result.RemoveAt(result.Count - 1);
+                // 1. Определяем ближайшую к базе цель
+                Vector2Int closestTarget = result[0];
+                float closestDistance = DistanceToOwnBase(closestTarget);
+                for (int i = 1; i < result.Count; i++)
+                {
+                    float distance = DistanceToOwnBase(result[i]);
+                    if (distance < closestDistance)
+                    {
+                        closestTarget = result[i];
+                        closestDistance = distance;
+                    }
+                }
+                // 2. Очищаем список и добавляем в него ближайшую цель
+                result.Clear();
+                result.Add(closestTarget);
             }
             return result;
             ///////////////////////////////////////
