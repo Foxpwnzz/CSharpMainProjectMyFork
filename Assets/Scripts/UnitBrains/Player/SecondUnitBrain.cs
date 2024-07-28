@@ -38,53 +38,43 @@ namespace UnitBrains.Player
 
         public override Vector2Int GetNextStep()
         {
-            if (_outOfReachTargets.Count == 0 || IsInAttackRange(_outOfReachTargets[0]))
-            {
-                return unit.Pos;
-            }
-            return unit.Pos.CalcNextStepTowards(_outOfReachTargets[0]);
+            Vector2Int target = Vector2Int.zero;
+            if (_outOfReachTargets.Count > 0) target = _outOfReachTargets[0];
+            else target = unit.Pos;
+            return IsTargetInRange(target) ? unit.Pos : unit.Pos.CalcNextStepTowards(target);
         }
-
         protected override List<Vector2Int> SelectTargets()
         {
             ///////////////////////////////////////
             // Homework 1.4 (1st block, 4rd module)
             ///////////////////////////////////////
             List<Vector2Int> result = new List<Vector2Int>(GetAllTargets());
+            float minDistance = float.MaxValue;
+            Vector2Int closestTarget = Vector2Int.zero;
             _outOfReachTargets.Clear();
 
-            if (result.Count > 0)
+            foreach (Vector2Int target in result)
             {
-                Vector2Int closestTarget = result[0];
-                float closestDistance = DistanceToOwnBase(closestTarget);
+                float closestDistance = DistanceToOwnBase(target);
+                if (closestDistance < minDistance)
+                {
+                    closestTarget = target;
+                    minDistance = closestDistance;
+                }
+            }
 
-                for (int i = 1; i < result.Count; i++)
-                {
-                    float distance = DistanceToOwnBase(result[i]);
-                    if (distance < closestDistance)
-                    {
-                        closestTarget = result[i];
-                        closestDistance = distance;
-                    }
-                }
-
-                if (IsReachable(closestTarget))
-                {
-                    result.Clear();
-                    result.Add(closestTarget);
-                }
-                else
-                {
-                    _outOfReachTargets.Add(closestTarget);
-                }
+            if (minDistance < float.MaxValue)
+            {
+                _outOfReachTargets.Add(closestTarget);
+                result.Clear();
+                if (IsTargetInRange(closestTarget)) result.Add(closestTarget);
             }
             else
             {
                 var enemyBase = GetEnemyBasePosition();
                 _outOfReachTargets.Add(enemyBase);
             }
-
-            return result;
+            return result;  
             ///////////////////////////////////////
         }
 
