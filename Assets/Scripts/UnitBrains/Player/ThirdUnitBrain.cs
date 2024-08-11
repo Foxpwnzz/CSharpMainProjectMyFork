@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+п»їusing System.Collections.Generic;
 using Model.Runtime.Projectiles;
 using UnityEngine;
 
@@ -12,7 +12,8 @@ namespace UnitBrains.Player
         {
             Moving,
             Attacking,
-            Switching
+            SwitchingToAttack,
+            SwitchingToMove
         }
 
         private UnitState currentState = UnitState.Moving;
@@ -23,21 +24,45 @@ namespace UnitBrains.Player
         {
             base.Update(deltaTime, time);
 
-            if (currentState == UnitState.Switching)
+            switch (currentState)
             {
-                switchTimer -= deltaTime;
-                if (switchTimer <= 0)
-                {
-                    currentState = currentState == UnitState.Attacking ? UnitState.Moving : UnitState.Attacking;
-                }
+                case UnitState.SwitchingToAttack:
+                case UnitState.SwitchingToMove:
+                    switchTimer -= deltaTime;
+                    if (switchTimer <= 0)
+                    {
+                        if (currentState == UnitState.SwitchingToAttack)
+                        {
+                            currentState = UnitState.Attacking;
+                        }
+                        else if (currentState == UnitState.SwitchingToMove)
+                        {
+                            currentState = UnitState.Moving;
+                        }
+                    }
+                    break;
+
+                case UnitState.Moving:
+                    if (HasTargets())
+                    {
+                        SwitchToState(UnitState.SwitchingToAttack);
+                    }
+                    break;
+
+                case UnitState.Attacking:
+                    if (!HasTargets())
+                    {
+                        SwitchToState(UnitState.SwitchingToMove);
+                    }
+                    break;
             }
         }
 
         protected override List<Vector2Int> SelectTargets()
         {
-            if (currentState == UnitState.Switching || currentState == UnitState.Moving)
+            if (currentState == UnitState.SwitchingToAttack || currentState == UnitState.Moving)
             {
-                return new List<Vector2Int>(); // Не выбираем цели для атаки
+                return new List<Vector2Int>();
             }
 
             return base.SelectTargets();
@@ -45,21 +70,18 @@ namespace UnitBrains.Player
 
         public override Vector2Int GetNextStep()
         {
-            if (currentState == UnitState.Switching || currentState == UnitState.Attacking)
+            if (currentState == UnitState.SwitchingToAttack || currentState == UnitState.Attacking)
             {
-                return unit.Pos; // Не двигаемся
+                return unit.Pos;
             }
 
             return base.GetNextStep();
         }
 
-        public void SwitchState()
+        private void SwitchToState(UnitState newState)
         {
-            if (currentState != UnitState.Switching)
-            {
-                currentState = UnitState.Switching;
-                switchTimer = switchCooldown;
-            }
+            currentState = newState;
+            switchTimer = switchCooldown;
         }
 
         protected override void GenerateProjectiles(Vector2Int forTarget, List<BaseProjectile> intoList)
@@ -68,6 +90,12 @@ namespace UnitBrains.Player
             {
                 base.GenerateProjectiles(forTarget, intoList);
             }
+        }
+
+        private bool HasTargets()
+        {
+            var targets = base.SelectTargets();
+            return targets != null && targets.Count > 0;
         }
     }
 }
