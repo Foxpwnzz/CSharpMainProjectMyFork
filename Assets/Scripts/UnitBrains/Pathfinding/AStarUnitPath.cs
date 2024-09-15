@@ -24,8 +24,8 @@ namespace UnitBrains.Pathfinding
                 return;
             }
 
-            Vector2Int nearestWalkableTile = FindNearestWalkableTile(endPoint);
-            if (nearestWalkableTile == startPoint)
+            Vector2Int nearestWalkableTile = FindNearestWalkableTile(EndPoint);  // Используем EndPoint
+            if (nearestWalkableTile == StartPoint)  // Используем StartPoint
             {
                 currentRetryAttempts++;
                 path = new Vector2Int[0];  // Путь отсутствует
@@ -33,10 +33,10 @@ namespace UnitBrains.Pathfinding
             }
 
             // A* алгоритм
-            List<Vector2Int> openSet = new List<Vector2Int> { startPoint };
+            List<Vector2Int> openSet = new List<Vector2Int> { StartPoint };  // Используем StartPoint
             Dictionary<Vector2Int, Vector2Int> cameFrom = new Dictionary<Vector2Int, Vector2Int>();
-            Dictionary<Vector2Int, float> gScore = new Dictionary<Vector2Int, float> { [startPoint] = 0 };
-            Dictionary<Vector2Int, float> fScore = new Dictionary<Vector2Int, float> { [startPoint] = Heuristic(startPoint, nearestWalkableTile) };
+            Dictionary<Vector2Int, float> gScore = new Dictionary<Vector2Int, float> { [StartPoint] = 0 };
+            Dictionary<Vector2Int, float> fScore = new Dictionary<Vector2Int, float> { [StartPoint] = Heuristic(StartPoint, nearestWalkableTile) };
 
             while (openSet.Count > 0)
             {
@@ -76,6 +76,38 @@ namespace UnitBrains.Pathfinding
             path = new Vector2Int[0];  // Путь отсутствует, юнит стоит
         }
 
+        public Vector2Int GetNextStepFrom(Vector2Int unitPos)
+        {
+            if (path == null || path.Length == 0)
+            {
+                return unitPos;  // Если путь не найден, юнит остаётся на месте
+            }
+
+            var found = false;
+            foreach (var cell in path)
+            {
+                if (found)
+                    return cell;
+
+                found = cell == unitPos;
+            }
+
+            // Если юнит не на пути, выводим сообщение об ошибке
+            Debug.LogError($"Unit {unitPos} is not on the path");
+
+            // Пересчитываем путь для юнита
+            Calculate();
+
+            // Если путь всё ещё не найден, возвращаем текущее положение
+            if (path == null || path.Length == 0)
+            {
+                return unitPos;
+            }
+
+            // Возвращаем следующий шаг после пересчета
+            return path[0];
+        }
+
         private void ReconstructPath(Dictionary<Vector2Int, Vector2Int> cameFrom, Vector2Int current)
         {
             List<Vector2Int> totalPath = new List<Vector2Int> { current };
@@ -113,27 +145,7 @@ namespace UnitBrains.Pathfinding
                 }
             }
 
-            return startPoint;  // Если не найдено проходимых клеток, юнит остаётся на старте
-        }
-
-        public Vector2Int GetNextStepFrom(Vector2Int unitPos)
-        {
-            if (path == null || path.Length == 0)
-            {
-                return unitPos;  // Если путь не найден, юнит остаётся на месте
-            }
-
-            var found = false;
-            foreach (var cell in path)
-            {
-                if (found)
-                    return cell;
-
-                found = cell == unitPos;
-            }
-
-            Calculate();  // Пересчитываем путь, если юнит не на пути
-            return unitPos;  // Если юнит не найден на пути, остаётся на месте
+            return StartPoint;  // Если не найдено проходимых клеток, юнит остаётся на старте
         }
 
         private float Heuristic(Vector2Int a, Vector2Int b)

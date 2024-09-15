@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Model.Runtime.Projectiles;
+using UnitBrains.Pathfinding;
 using UnityEngine;
 
 namespace UnitBrains.Player
@@ -17,13 +18,20 @@ namespace UnitBrains.Player
         }
 
         private UnitState currentState = UnitState.Moving;
-        private float switchCooldown = 1.0f;
-        private float switchTimer = 0.0f;
+        private float switchCooldown = 0.0f;
+        private float switchTimer = 1.0f;
+
+        private AStarUnitPath _path;  // Поле для хранения пути
 
         public override void Update(float deltaTime, float time)
         {
             base.Update(deltaTime, time);
 
+            // Получаем цель и целевую точку
+            var target = UnitCoordinator.Instance.GetRecommendedTarget();
+            var recommendedPoint = UnitCoordinator.Instance.GetRecommendedPoint();
+
+            // Проверка состояния переключения
             switch (currentState)
             {
                 case UnitState.SwitchingToAttack:
@@ -43,9 +51,24 @@ namespace UnitBrains.Player
                     break;
 
                 case UnitState.Moving:
-                    if (HasTargets())
+                    // Если цель в зоне атаки, переключаемся на атаку
+                    if (target != null && Vector2Int.Distance(unit.Pos, target.Pos) <= unit.Config.AttackRange * 2)
                     {
                         SwitchToState(UnitState.SwitchingToAttack);
+                    }
+                    else
+                    {
+                        // Проверяем, если путь ещё не рассчитан или изменилась цель
+                        if (_path == null || _path.EndPoint != recommendedPoint)
+                        {
+                            _path = new AStarUnitPath(runtimeModel, unit.Pos, recommendedPoint);
+                        }
+
+                        // Получаем следующий шаг
+                        var nextStep = _path.GetNextStepFrom(unit.Pos);
+
+                        // Перемещаем юнит на следующий шаг
+                        unit.MoveTo(nextStep);
                     }
                     break;
 
@@ -66,16 +89,6 @@ namespace UnitBrains.Player
             }
 
             return base.SelectTargets();
-        }
-
-        public override Vector2Int GetNextStep()
-        {
-            if (currentState == UnitState.SwitchingToAttack || currentState == UnitState.Attacking)
-            {
-                return unit.Pos;
-            }
-
-            return base.GetNextStep();
         }
 
         private void SwitchToState(UnitState newState)

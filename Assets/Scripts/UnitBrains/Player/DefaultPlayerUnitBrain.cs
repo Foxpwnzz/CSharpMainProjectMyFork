@@ -14,7 +14,7 @@ namespace UnitBrains.Player
         {
             list.Sort(CompareByDistanceToOwnBase);
         }
-        
+
         private int CompareByDistanceToOwnBase(Vector2Int a, Vector2Int b)
         {
             var distanceA = DistanceToOwnBase(a);

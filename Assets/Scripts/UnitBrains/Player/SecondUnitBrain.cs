@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using Model.Runtime.Projectiles;
 using UnityEngine;
+using UnitBrains.Pathfinding;
+using Utilities;
 
 namespace UnitBrains.Player
 {
@@ -13,6 +15,8 @@ namespace UnitBrains.Player
         private float _cooldownTime = 0f;
         private bool _overheated;
 
+        private AStarUnitPath _path;  // Добавляем поле для хранения пути A*
+
         private static int unitCounter = 0; // Статическое поле для присвоения номеров юнитов
         private int unitNumber; // Поле для номера юнита
         private const int MaxTargetsToConsider = 3; // Константа для максимального количества целей для рассмотрения
@@ -24,9 +28,6 @@ namespace UnitBrains.Player
 
         protected override void GenerateProjectiles(Vector2Int forTarget, List<BaseProjectile> intoList)
         {
-            ///////////////////////////////////////
-            // Homework 1.3 (1st block, 3rd module)
-            /////////////////////////////////////// 
             int currentTemperature = GetTemperature();
             if (currentTemperature >= (int)OverheatTemperature)
             {
@@ -39,45 +40,12 @@ namespace UnitBrains.Player
                 var projectile = CreateProjectile(forTarget);
                 AddProjectileToList(projectile, intoList);
             }
-            ///////////////////////////////////////
-        }
-
-        public override Vector2Int GetNextStep()
-        {
-            return base.GetNextStep();
-        }
-
-        protected override List<Vector2Int> SelectTargets()
-        {
-            ///////////////////////////////////////
-            // Homework 1.4 (1st block, 4rd module)
-            ///////////////////////////////////////
-            List<Vector2Int> result = GetReachableTargets();
-            if (result.Count > 0)
-            {
-                // Сортируем цели по дистанции до базы
-                SortByDistanceToOwnBase(result);
-
-                // Оставляем в списке ближайшие MaxTargetsToConsider цели
-                if (result.Count > MaxTargetsToConsider)
-                {
-                    result = result.GetRange(0, MaxTargetsToConsider);
-                }
-
-                // Рассчитываем номер цели для атаки
-                int targetIndex = (unitNumber - 1) % result.Count;
-                Vector2Int target = result[targetIndex];
-
-                // Очищаем список и добавляем в него только выбранную цель
-                result.Clear();
-                result.Add(target);
-            }
-            return result;
-            ///////////////////////////////////////
         }
 
         public override void Update(float deltaTime, float time)
         {
+            base.Update(deltaTime, time);
+
             if (_overheated)
             {
                 _cooldownTime += Time.deltaTime;
@@ -89,6 +57,49 @@ namespace UnitBrains.Player
                     _overheated = false;
                 }
             }
+
+            // Получаем цель и целевую точку
+            var target = UnitCoordinator.Instance.GetRecommendedTarget();
+            var recommendedPoint = UnitCoordinator.Instance.GetRecommendedPoint();
+
+            // Если юнит может атаковать цель, атакуем
+            if (target != null && Vector2Int.Distance(unit.Pos, target.Pos) <= unit.Config.AttackRange * 2)
+            {
+                GenerateProjectiles(target.Pos, new List<BaseProjectile>());
+            }
+            else
+            {
+                // Если путь еще не был рассчитан или нужен новый путь, создаем путь
+                if (_path == null || _path.EndPoint != recommendedPoint)
+                {
+                    _path = new AStarUnitPath(runtimeModel, unit.Pos, recommendedPoint);
+                }
+
+                // Получаем следующий шаг по пути
+                var nextStep = _path.GetNextStepFrom(unit.Pos);
+                unit.MoveTo(nextStep);  // Перемещаем юнита на следующий шаг
+            }
+        }
+
+        protected override List<Vector2Int> SelectTargets()
+        {
+            List<Vector2Int> result = GetReachableTargets();
+            if (result.Count > 0)
+            {
+                SortByDistanceToOwnBase(result);
+
+                if (result.Count > MaxTargetsToConsider)
+                {
+                    result = result.GetRange(0, MaxTargetsToConsider);
+                }
+
+                int targetIndex = (unitNumber - 1) % result.Count;
+                Vector2Int target = result[targetIndex];
+
+                result.Clear();
+                result.Add(target);
+            }
+            return result;
         }
 
         private int GetTemperature()

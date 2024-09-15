@@ -37,7 +37,12 @@ namespace UnitBrains
                 return unit.Pos;
 
             var target = runtimeModel.RoMap.Bases[IsPlayerUnitBrain ? RuntimeModel.BotPlayerId : RuntimeModel.PlayerId];
-            _activePath = new AStarUnitPath(runtimeModel, unit.Pos, target);
+            if (_activePath == null || _activePath.EndPoint != target)
+            {
+                _activePath = new AStarUnitPath(runtimeModel, unit.Pos, target);
+            }
+
+            // Попробуем получить следующий шаг. Если юнит не на пути, пересчитываем.
             return _activePath.GetNextStepFrom(unit.Pos);
         }
 
