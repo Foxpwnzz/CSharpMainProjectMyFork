@@ -44,7 +44,7 @@ namespace UnitBrains.Player
                             currentState = UnitState.Attacking;
                         }
                         else if (currentState == UnitState.SwitchingToMove)
-                        {
+                    {
                             currentState = UnitState.Moving;
                         }
                     }
@@ -58,7 +58,6 @@ namespace UnitBrains.Player
                     }
                     else
                     {
-                        // Проверяем, если путь ещё не рассчитан или изменилась цель
                         if (_path == null || _path.EndPoint != recommendedPoint)
                         {
                             _path = new AStarUnitPath(runtimeModel, unit.Pos, recommendedPoint);
@@ -68,7 +67,7 @@ namespace UnitBrains.Player
                         var nextStep = _path.GetNextStepFrom(unit.Pos);
 
                         // Перемещаем юнит на следующий шаг
-                        unit.MoveTo(nextStep);
+                        unit.UpdateMove(nextStep);
                     }
                     break;
 
@@ -86,7 +85,7 @@ namespace UnitBrains.Player
             if (currentState == UnitState.SwitchingToAttack || currentState == UnitState.Moving)
             {
                 return new List<Vector2Int>();
-            }
+        }
 
             return base.SelectTargets();
         }

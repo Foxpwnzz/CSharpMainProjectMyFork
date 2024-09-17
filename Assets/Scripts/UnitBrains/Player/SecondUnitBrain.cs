@@ -15,15 +15,15 @@ namespace UnitBrains.Player
         private float _cooldownTime = 0f;
         private bool _overheated;
 
-        private AStarUnitPath _path;  // Добавляем поле для хранения пути A*
+        private AStarUnitPath _path; 
 
-        private static int unitCounter = 0; // Статическое поле для присвоения номеров юнитов
-        private int unitNumber; // Поле для номера юнита
-        private const int MaxTargetsToConsider = 3; // Константа для максимального количества целей для рассмотрения
+        private static int unitCounter = 0;
+        private int unitNumber; 
+        private const int MaxTargetsToConsider = 3; 
 
         public SecondUnitBrain()
         {
-            unitNumber = ++unitCounter; // Присваиваем уникальный номер каждому юниту
+            unitNumber = ++unitCounter; 
         }
 
         protected override void GenerateProjectiles(Vector2Int forTarget, List<BaseProjectile> intoList)
@@ -56,6 +56,7 @@ namespace UnitBrains.Player
                     _cooldownTime = 0;
                     _overheated = false;
                 }
+                return; 
             }
 
             // Получаем цель и целевую точку
@@ -69,15 +70,25 @@ namespace UnitBrains.Player
             }
             else
             {
-                // Если путь еще не был рассчитан или нужен новый путь, создаем путь
+
                 if (_path == null || _path.EndPoint != recommendedPoint)
                 {
                     _path = new AStarUnitPath(runtimeModel, unit.Pos, recommendedPoint);
                 }
 
-                // Получаем следующий шаг по пути
                 var nextStep = _path.GetNextStepFrom(unit.Pos);
-                unit.MoveTo(nextStep);  // Перемещаем юнита на следующий шаг
+                unit.UpdateMove(nextStep);
+            }
+
+            var targets = SelectTargets();
+            {
+                if (_path == null || _path.EndPoint != recommendedPoint)
+                {
+                    _path = new AStarUnitPath(runtimeModel, unit.Pos, recommendedPoint);
+                }
+
+                var nextStep = _path.GetNextStepFrom(unit.Pos);
+                unit.UpdateMove(nextStep); 
             }
         }
 
