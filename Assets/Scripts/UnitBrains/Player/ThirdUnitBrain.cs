@@ -1,113 +1,110 @@
-﻿using System.Collections.Generic;
-using Model.Runtime.Projectiles;
-using UnitBrains.Pathfinding;
+﻿using Model;
+using System.Collections.Generic;
+using System.Linq;
+using UnitBrains.Player;
 using UnityEngine;
 
-namespace UnitBrains.Player
+enum UnitMode
 {
-    public class ThirdUnitBrain : DefaultPlayerUnitBrain
+    IsShooting,
+    IsRiding
+}
+
+public class ThirdUnitBrain : DefaultPlayerUnitBrain
+{
+    public override string TargetUnitName => "Ironclad Behemoth";
+    private UnitMode _currentMode = UnitMode.IsRiding;
+    private bool _changingMode;
+    private float _modeChangeDelay = 0.1f;
+    private float _timer;
+
+    private List<Vector2Int> _priorityTargets = new List<Vector2Int>();
+
+    public static int unitCounter = 0;
+    private int unitNumber;
+    private const int maxTargetsCount = 3;
+
+    public ThirdUnitBrain()
     {
-        public override string TargetUnitName => "Ironclad Behemoth";
+        unitNumber = unitCounter;
+        unitCounter++;
+    }
 
-        private enum UnitState
+    public override void Update(float deltaTime, float time)
+    {
+        if (_changingMode)
         {
-            Moving,
-            Attacking,
-            SwitchingToAttack,
-            SwitchingToMove
-        }
+            _timer += Time.deltaTime;
 
-        private UnitState currentState = UnitState.Moving;
-        private float switchCooldown = 0.0f;
-        private float switchTimer = 1.0f;
-
-        private AStarUnitPath _path;  // Поле для хранения пути
-
-        public override void Update(float deltaTime, float time)
-        {
-            base.Update(deltaTime, time);
-
-            // Получаем цель и целевую точку
-            var target = UnitCoordinator.Instance.GetRecommendedTarget();
-            var recommendedPoint = UnitCoordinator.Instance.GetRecommendedPoint();
-
-            // Проверка состояния переключения
-            switch (currentState)
+            if (_timer >= _modeChangeDelay)
             {
-                case UnitState.SwitchingToAttack:
-                case UnitState.SwitchingToMove:
-                    switchTimer -= deltaTime;
-                    if (switchTimer <= 0)
-                    {
-                        if (currentState == UnitState.SwitchingToAttack)
-                        {
-                            currentState = UnitState.Attacking;
-                        }
-                        else if (currentState == UnitState.SwitchingToMove)
-                    {
-                            currentState = UnitState.Moving;
-                        }
-                    }
-                    break;
-
-                case UnitState.Moving:
-                    // Если цель в зоне атаки, переключаемся на атаку
-                    if (target != null && Vector2Int.Distance(unit.Pos, target.Pos) <= unit.Config.AttackRange * 2)
-                    {
-                        SwitchToState(UnitState.SwitchingToAttack);
-                    }
-                    else
-                    {
-                        if (_path == null || _path.EndPoint != recommendedPoint)
-                        {
-                            _path = new AStarUnitPath(runtimeModel, unit.Pos, recommendedPoint);
-                        }
-
-                        // Получаем следующий шаг
-                        var nextStep = _path.GetNextStepFrom(unit.Pos);
-
-                        // Перемещаем юнит на следующий шаг
-                        unit.UpdateMove(nextStep);
-                    }
-                    break;
-
-                case UnitState.Attacking:
-                    if (!HasTargets())
-                    {
-                        SwitchToState(UnitState.SwitchingToMove);
-                    }
-                    break;
+                _timer = 0f;
+                _changingMode = false;
             }
         }
 
-        protected override List<Vector2Int> SelectTargets()
+        base.Update(deltaTime, time);
+    }
+
+    public override Vector2Int GetNextStep()
+    {
+        Vector2Int targetPosition = base.GetNextStep();
+
+        if (targetPosition == unit.Pos)
         {
-            if (currentState == UnitState.SwitchingToAttack || currentState == UnitState.Moving)
+            if (_currentMode == UnitMode.IsRiding)
+                _changingMode = true;
+
+            _currentMode = UnitMode.IsShooting;
+        }
+        else
+        {
+            if (_currentMode == UnitMode.IsShooting)
+                _changingMode = true;
+
+            _currentMode = UnitMode.IsRiding;
+        }
+
+        return _changingMode ? unit.Pos : targetPosition;
+    }
+
+    protected override List<Vector2Int> SelectTargets()
+    {
+        var iD = IsPlayerUnitBrain ? RuntimeModel.BotPlayerId : RuntimeModel.BotPlayerId;
+        var baseCoords = runtimeModel.RoMap.Bases[iD];
+
+        if (_changingMode)
+            return new List<Vector2Int>();
+
+        if (_currentMode == UnitMode.IsShooting)
+        {
+            _priorityTargets.Clear();
+            List<Vector2Int> allTargets = GetAllTargets().ToList();
+            List<Vector2Int> reachableTargets = GetReachableTargets();
+            List<Vector2Int> closestTargets = new List<Vector2Int>();
+
+            SortByDistanceToOwnBase(allTargets);
+
+            var closestCount = maxTargetsCount > allTargets.Count ? allTargets.Count : maxTargetsCount;
+            closestTargets.AddRange(allTargets.GetRange(0, closestCount));
+
+            var targetIndex = unitNumber % maxTargetsCount;
+            var indexIsExist = targetIndex < closestTargets.Count && targetIndex > 0;
+            if (indexIsExist)
             {
-                return new List<Vector2Int>();
-        }
-
-            return base.SelectTargets();
-        }
-
-        private void SwitchToState(UnitState newState)
-        {
-            currentState = newState;
-            switchTimer = switchCooldown;
-        }
-
-        protected override void GenerateProjectiles(Vector2Int forTarget, List<BaseProjectile> intoList)
-        {
-            if (currentState == UnitState.Attacking)
-            {
-                base.GenerateProjectiles(forTarget, intoList);
+                _priorityTargets.Add(closestTargets[targetIndex]);
             }
-        }
+            else if (closestTargets.Count > 0)
+            {
+                _priorityTargets.Add(closestTargets[0]);
+            }
+            else
+            {
+                _priorityTargets.Add(baseCoords);
+            }
 
-        private bool HasTargets()
-        {
-            var targets = base.SelectTargets();
-            return targets != null && targets.Count > 0;
+            return reachableTargets.Contains(_priorityTargets.LastOrDefault()) ? _priorityTargets : reachableTargets;
         }
+        return new List<Vector2Int>();
     }
 }

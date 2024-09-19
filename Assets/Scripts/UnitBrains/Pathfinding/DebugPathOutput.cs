@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using View;
 
@@ -13,6 +14,7 @@ namespace UnitBrains.Pathfinding
         public BaseUnitPath Path { get; private set; }
         private readonly List<GameObject> allHighlights = new();
         private Coroutine highlightCoroutine;
+        private static float delayHighlight = 0.15f;
 
         public void HighlightPath(BaseUnitPath path)
         {
@@ -21,7 +23,7 @@ namespace UnitBrains.Pathfinding
             {
                 DestroyHighlight(0);
             }
-
+            
             if (highlightCoroutine != null)
             {
                 StopCoroutine(highlightCoroutine);
@@ -35,8 +37,14 @@ namespace UnitBrains.Pathfinding
             foreach (var cell in path.GetPath())
             {
                 CreateHighlight(cell);
-                yield return new WaitForSeconds(0.5f); // задержка для визуализации
+                if (allHighlights.Count() > maxHighlights)
+                {
+                    DestroyHighlight(0);
+                }
+                yield return new WaitForSeconds(delayHighlight);
             }
+
+            HighlightPath(path);
         }
 
         private void CreateHighlight(Vector2Int atCell)
