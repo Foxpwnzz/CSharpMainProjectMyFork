@@ -1,22 +1,26 @@
 using UnityEngine;
 using Model.Runtime;
+using Assets.Scripts.UnitBrains.Buff;
 
-public class SpeedBoostBuff : BaseBuff
+namespace Assets.Scripts.UnitBrains.Buff
 {
-    public float SpeedMultiplier = 1.5f;
-
-    public SpeedBoostBuff(float duration)
+    public class SpeedBoostBuff : BaseBuff
     {
-        Duration = duration;
-    }
+        public float SpeedMultiplier = 1.5f;
 
-    public override void ApplyBuff(Unit unit)
-    {
-        unit.Speed *= SpeedMultiplier; // Увеличиваем скорость
-    }
+        public SpeedBoostBuff(float duration)
+        {
+            Duration = duration;
+        }
 
-    public override void RemoveBuff(Unit unit)
-    {
-        unit.Speed /= SpeedMultiplier; // Восстанавливаем исходную скорость
+        public override void ApplyBuff(Unit unit)
+        {
+            unit.Speed *= SpeedMultiplier; // Увеличиваем скорость
+        }
+
+        public override void RemoveBuff(Unit unit)
+        {
+            unit.Speed /= SpeedMultiplier; // Восстанавливаем исходную скорость
+        }
     }
 }
