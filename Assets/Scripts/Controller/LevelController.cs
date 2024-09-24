@@ -28,7 +28,7 @@ namespace Controller
             _rootController = rootController;
             _botController = new BotController(OnBotUnitChosen);
             _simulationController = new(runtimeModel, OnLevelFinished);
-            
+
             _rootView = ServiceLocator.Get<RootView>();
             _gameplayView = ServiceLocator.Get<Gameplay3dView>();
             _settings = ServiceLocator.Get<Settings>();
@@ -41,7 +41,7 @@ namespace Controller
         public void StartLevel(int level)
         {
             ServiceLocator.RegisterAs(this, typeof(IPlayerUnitChoosingListener));
-            
+
             _rootView.HideLevelFinished();
 
             Random.InitState(level);
@@ -61,7 +61,7 @@ namespace Controller
         {
             if (unitConfig.Cost > _runtimeModel.Money[RuntimeModel.PlayerId])
                 return;
-            
+
             SpawnUnit(RuntimeModel.PlayerId, unitConfig);
             TryStartSimulation();
         }
@@ -77,10 +77,18 @@ namespace Controller
             var pos = _runtimeModel.Map.FindFreeCellNear(
                 _runtimeModel.Map.Bases[forPlayer],
                 _runtimeModel.RoUnits.Select(x => x.Pos).ToHashSet());
-            
-            var unit = new Unit(config, pos, forPlayer == RuntimeModel.PlayerId ? _playerUnitCoordinator : _botUnitCoordinator);
-            _runtimeModel.Money[forPlayer] -= config.Cost;
-            _runtimeModel.PlayersUnits[forPlayer].Add(unit);
+
+            var coordinator = forPlayer == RuntimeModel.PlayerId ? _playerUnitCoordinator : _botUnitCoordinator;
+            if (coordinator != null)
+            {
+                var unit = new Unit(config, pos, coordinator);
+                _runtimeModel.Money[forPlayer] -= config.Cost;
+                _runtimeModel.PlayersUnits[forPlayer].Add(unit);
+            }
+            else
+            {
+                Debug.LogError("UnitCoordinator is not initialized.");
+            }
         }
 
         private void TryStartSimulation()
