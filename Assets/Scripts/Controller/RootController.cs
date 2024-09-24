@@ -11,28 +11,33 @@ namespace Controller
         private readonly PersistedModel _persisted;
         private readonly RuntimeModel _runtimeModel;
         private readonly LevelController _levelController;
-        
+        private BuffSystem _buffSystem;
+
         private RootView _rootView;
 
         public RootController(Settings settings, Canvas targetCanvas)
         {
             _persisted = PersistanceUtils.LoadSingleton(new PersistedModel());
             ServiceLocator.Register(TimeUtil.Create());
-            
+
             _runtimeModel = new();
             ServiceLocator.RegisterAs(_runtimeModel, typeof(IReadOnlyRuntimeModel));
-            
+
+            // Инициализируем систему баффов и регистрируем её
+            _buffSystem = new BuffSystem();
+            ServiceLocator.Register(_buffSystem);
+
             SpawnRootVisual(targetCanvas);
             ServiceLocator.Register(_rootView);
-            
+
             var gameplayVisual = SpawnGameplayVisual();
             ServiceLocator.Register(gameplayVisual);
 
             var vfxView = SpawnVFXView();
             ServiceLocator.Register(vfxView);
-            
+
             _levelController = new(_runtimeModel, this);
-            
+
             _rootView.ShowStartMenu();
         }
 
@@ -63,13 +68,13 @@ namespace Controller
             _rootView = Object.Instantiate(prefab, targetCanvas.transform);
             _rootView.Initialize(this);
         }
-        
+
         private Gameplay3dView SpawnGameplayVisual()
         {
             var prefab = Resources.Load<Gameplay3dView>("View/Gameplay3dView");
             return Object.Instantiate(prefab, Vector3.zero, Quaternion.identity);
         }
-        
+
         private VFXView SpawnVFXView()
         {
             var prefab = Resources.Load<VFXView>("View/VFXView");
