@@ -24324,6 +24324,7 @@ GameObject:
   - component: {fileID: 386171954720946930}
   - component: {fileID: 6788588721598865268}
   - component: {fileID: 1963013773103935339}
+  - component: {fileID: 1746068464211293398}
   m_Layer: 11
   m_Name: PlayerUnit2
   m_TagString: Untagged
@@ -24400,6 +24401,19 @@ MonoBehaviour:
   cellHighlightPrefab: {fileID: 4141273912711956317, guid: 6b7b54fba8ef4704396fc9f540ee8aa2,
     type: 3}
   maxHighlights: 5
+--- !u!114 &1746068464211293398
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6168324980205769227}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76e2f9c5da8f70f4db77e4b6c9d4c4f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  duration: 10
 --- !u!1 &6539454795392824391
 GameObject:
   m_ObjectHideFlags: 0

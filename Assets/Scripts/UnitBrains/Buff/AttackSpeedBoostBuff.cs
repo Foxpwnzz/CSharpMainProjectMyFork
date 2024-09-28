@@ -6,7 +6,7 @@ namespace Assets.Scripts.UnitBrains.Buff
 {
     public class AttackSpeedBoostBuff : BaseBuff
     {
-        public float AttackSpeedMultiplier = 1.5f;
+        private float attackSpeedMultiplier = 1.5f;
 
         public AttackSpeedBoostBuff(float duration)
         {
@@ -15,12 +15,19 @@ namespace Assets.Scripts.UnitBrains.Buff
 
         public override void ApplyBuff(Unit unit)
         {
-            unit.AttackSpeed *= AttackSpeedMultiplier; // Ускоряем атаку
+            // Используем метод для модификации скорости атаки
+            unit.ModifyAttackSpeed(attackSpeedMultiplier);
         }
 
         public override void RemoveBuff(Unit unit)
         {
-            unit.AttackSpeed /= AttackSpeedMultiplier; // Восстанавливаем скорость атаки
+            // Используем метод для возврата к оригинальной скорости атаки
+            unit.ModifyAttackSpeed(1 / attackSpeedMultiplier);
+        }
+
+        public override bool CanApplyTo(Unit unit)
+        {
+            return true; // Разрешаем применять бафф ко всем юнитам или уточните по типам
         }
     }
 }

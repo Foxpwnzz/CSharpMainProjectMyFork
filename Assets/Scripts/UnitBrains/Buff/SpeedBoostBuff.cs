@@ -6,7 +6,7 @@ namespace Assets.Scripts.UnitBrains.Buff
 {
     public class SpeedBoostBuff : BaseBuff
     {
-        public float SpeedMultiplier = 1.5f;
+        private float speedMultiplier = 1.5f;
 
         public SpeedBoostBuff(float duration)
         {
@@ -15,12 +15,17 @@ namespace Assets.Scripts.UnitBrains.Buff
 
         public override void ApplyBuff(Unit unit)
         {
-            unit.Speed *= SpeedMultiplier; // Увеличиваем скорость
+            unit.ModifySpeed(speedMultiplier);
         }
 
         public override void RemoveBuff(Unit unit)
         {
-            unit.Speed /= SpeedMultiplier; // Восстанавливаем исходную скорость
+            unit.ModifySpeed(1 / speedMultiplier);
+        }
+
+        public override bool CanApplyTo(Unit unit)
+        {
+            return true;
         }
     }
 }

@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 1187209766516946272}
   - component: {fileID: 1203638322487831752}
   - component: {fileID: 3664015912038799981}
+  - component: {fileID: 9009243179819037262}
   m_Layer: 11
   m_Name: PlayerUnit3
   m_TagString: Untagged
@@ -72,6 +73,20 @@ MonoBehaviour:
   _attackRange: 3.5
   _projectileType: 0
   _damage: 15
+--- !u!114 &9009243179819037262
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 490962564411624177}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 150394f4149247947ac896e80028ab96, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rangeMultiplier: 1.5
+  duration: 8
 --- !u!1 &526913648782850647
 GameObject:
   m_ObjectHideFlags: 0

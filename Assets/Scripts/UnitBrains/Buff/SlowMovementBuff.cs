@@ -4,10 +4,9 @@ using Assets.Scripts.UnitBrains.Buff;
 
 namespace Assets.Scripts.UnitBrains.Buff
 {
-
     public class SlowMovementBuff : BaseBuff
     {
-        public float SlowMultiplier = 0.5f;
+        private float slowMultiplier = 0.5f;
 
         public SlowMovementBuff(float duration)
         {
@@ -16,12 +15,17 @@ namespace Assets.Scripts.UnitBrains.Buff
 
         public override void ApplyBuff(Unit unit)
         {
-            unit.Speed *= SlowMultiplier; // Замедляем скорость
+            unit.ModifySpeed(slowMultiplier);
         }
 
         public override void RemoveBuff(Unit unit)
         {
-            unit.Speed /= SlowMultiplier; // Восстанавливаем исходную скорость
+            unit.ModifySpeed(1 / slowMultiplier);
+        }
+
+        public override bool CanApplyTo(Unit unit)
+        {
+            return true;
         }
     }
 }

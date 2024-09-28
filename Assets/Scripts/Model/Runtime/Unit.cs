@@ -30,16 +30,20 @@ namespace Model.Runtime
         private float _nextMoveTime = 0f;
         private float _nextAttackTime = 0f;
 
-        public float Speed { get; set; } // Скорость движения
-        public float AttackSpeed { get; set; } // Скорость атаки
+        public float Speed { get; private set; }
+        public float AttackSpeed { get; private set; }
+        public float AttackRange { get; private set; } // Добавлено поле для изменения радиуса атаки
+
+        private bool _doubleShotEnabled = false;
 
         public Unit(UnitConfig config, Vector2Int startPos, UnitCoordinator coordinator)
         {
             Config = config;
             Pos = startPos;
             Health = config.MaxHealth;
-            Speed = Config.MoveDelay; // Инициализация стандартной скоростью
-            AttackSpeed = Config.AttackDelay; // Инициализация стандартной скоростью атаки
+            Speed = Config.MoveDelay;
+            AttackSpeed = Config.AttackDelay;
+            AttackRange = Config.AttackRange; // Инициализируем собственное поле для радиуса атаки
             _brain = UnitBrainProvider.GetBrain(config);
             _brain.SetUnit(this);
             _brain.SetCoordinator(coordinator);
@@ -51,12 +55,6 @@ namespace Model.Runtime
             if (IsDead)
                 return;
 
-            BuffSystem buffSystem = ServiceLocator.Get<BuffSystem>();
-
-            // Получаем модификаторы от баффов
-            float moveSpeedModifier = buffSystem.GetMoveSpeedModifier(this);
-            float attackSpeedModifier = buffSystem.GetAttackSpeedModifier(this);
-
             if (_nextBrainUpdateTime < time)
             {
                 _nextBrainUpdateTime = time + Config.BrainUpdateInterval;
@@ -65,13 +63,13 @@ namespace Model.Runtime
 
             if (_nextMoveTime < time)
             {
-                _nextMoveTime = time + Speed * moveSpeedModifier; // Учитываем бафф на скорость передвижения
+                _nextMoveTime = time + Speed;
                 Move();
             }
 
             if (_nextAttackTime < time && Attack())
             {
-                _nextAttackTime = time + AttackSpeed * attackSpeedModifier; // Учитываем бафф на скорость атаки
+                _nextAttackTime = time + AttackSpeed;
             }
         }
 
@@ -82,6 +80,13 @@ namespace Model.Runtime
                 return false;
 
             _pendingProjectiles.AddRange(projectiles);
+
+            if (_doubleShotEnabled)
+            {
+                // Двойной выстрел, добавляем ещё один залп
+                _pendingProjectiles.AddRange(_brain.GetProjectiles());
+            }
+
             return true;
         }
 
@@ -112,6 +117,36 @@ namespace Model.Runtime
         public void TakeDamage(int projectileDamage)
         {
             Health -= projectileDamage;
+        }
+
+        // Метод для изменения скорости передвижения
+        public void ModifySpeed(float multiplier)
+        {
+            Speed *= multiplier;
+        }
+
+        // Метод для изменения скорости атаки
+        public void ModifyAttackSpeed(float multiplier)
+        {
+            AttackSpeed *= multiplier;
+        }
+
+        // Метод для включения/выключения двойного выстрела
+        public void SetDoubleShot(bool enable)
+        {
+            _doubleShotEnabled = enable;
+        }
+
+        // Метод для изменения радиуса атаки
+        public void ModifyAttackRange(float multiplier)
+        {
+            AttackRange *= multiplier;
+        }
+
+        // Метод для восстановления радиуса атаки
+        public void RestoreAttackRange()
+        {
+            AttackRange = Config.AttackRange; // Возвращаем значение к оригинальному из конфига
         }
     }
 }
